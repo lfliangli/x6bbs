@@ -33,8 +33,13 @@ function get_global($key, $group = null) {
     return $v;
 }
 
-function get_config($key){
-    return Yaf_Registry::get("config")->get($key);
+function get_config($key = ''){
+    $key = trim($key);
+    if($key) {
+        return Yaf_Registry::get("config")->get($key);
+    }else{
+        return Yaf_Registry::get("config")->get();
+    }
 }
 
 function memory($cmd, $key='', $value='', $ttl = 0, $prefix = '') {
