@@ -11,7 +11,7 @@ class C {
     private static $_memory;
 
     public static function t($name) {
-        $name = preg_replace('/_([A-Za-z])/e',"strtoupper('$1')", '_'.$name);
+        $name = preg_replace_callback('/_([A-Za-z])/',function($m){ return strtoupper($m[1]);}, '_'.$name);
         $name = 'Table_' . $name;
         return self::_make_obj($name);
     }

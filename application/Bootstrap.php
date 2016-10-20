@@ -14,7 +14,6 @@ class Bootstrap extends Yaf_Bootstrap_Abstract {
      */
     public function _initCommon(Yaf_Dispatcher $dispatcher) {
         require_once APPLICATION_PATH . '/public/Common.php';
-        $dispatcher->catchException(true);
     }
 
     public function _initConfig() {

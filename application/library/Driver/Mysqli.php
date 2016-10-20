@@ -18,43 +18,69 @@ class Driver_Mysqli {
     var $sqldebug = array();
     var $map = array();
 
-    function db_mysql($config) {
-        if (!empty($config)) {
+    function db_mysql($config = array()) {
+        if(!empty($config)) {
             $this->set_config($config);
         }
     }
 
     function set_config($config) {
-        $this->config = $config;
-        $this->tablepre = $config->tablepre;
+        $this->config = &$config;
+        $this->tablepre = $config['1']['tablepre'];
+        if(!empty($this->config['map'])) {
+            $this->map = $this->config['map'];
+            for($i = 1; $i <= 100; $i++) {
+                if(isset($this->map['forum_thread'])) {
+                    $this->map['forum_thread_'.$i] = $this->map['forum_thread'];
+                }
+                if(isset($this->map['forum_post'])) {
+                    $this->map['forum_post_'.$i] = $this->map['forum_post'];
+                }
+                if(isset($this->map['forum_attachment']) && $i <= 10) {
+                    $this->map['forum_attachment_'.($i-1)] = $this->map['forum_attachment'];
+                }
+            }
+            if(isset($this->map['common_member'])) {
+                $this->map['common_member_archive'] =
+                $this->map['common_member_count'] = $this->map['common_member_count_archive'] =
+                $this->map['common_member_status'] = $this->map['common_member_status_archive'] =
+                $this->map['common_member_profile'] = $this->map['common_member_profile_archive'] =
+                $this->map['common_member_field_forum'] = $this->map['common_member_field_forum_archive'] =
+                $this->map['common_member_field_home'] = $this->map['common_member_field_home_archive'] =
+                $this->map['common_member_validate'] = $this->map['common_member_verify'] =
+                $this->map['common_member_verify_info'] = $this->map['common_member'];
+            }
+        }
     }
 
-    function connect() {
-        if (empty($this->config)) {
+    function connect($serverid = 1) {
+        $config_1 = $this->config[$serverid];
+        if(empty($this->config) || empty($config_1)) {
             $this->halt('config_db_not_found');
         }
 
-        $this->curlink = $this->link = $this->_dbconnect(
-            $this->config->hostname,
-            $this->config->username,
-            $this->config->password,
-            $this->config->charset,
-            $this->config->database,
-            $this->config->pconnect
+        $this->link[$serverid] = $this->_dbconnect(
+            $this->config[$serverid]['dbhost'],
+            $this->config[$serverid]['dbuser'],
+            $this->config[$serverid]['dbpw'],
+            $this->config[$serverid]['dbcharset'],
+            $this->config[$serverid]['dbname'],
+            $this->config[$serverid]['pconnect']
         );
+        $this->curlink = $this->link[$serverid];
+
     }
 
     function _dbconnect($dbhost, $dbuser, $dbpw, $dbcharset, $dbname, $pconnect, $halt = true) {
 
         $link = new mysqli();
-        if (!$link->real_connect($dbhost, $dbuser, $dbpw, $dbname, null, null, MYSQLI_CLIENT_COMPRESS)) {
+        if(!$link->real_connect($dbhost, $dbuser, $dbpw, $dbname, null, null, MYSQLI_CLIENT_COMPRESS)) {
             $halt && $this->halt('notconnect', $this->errno());
         } else {
             $this->curlink = $link;
-            if ($this->version() > '4.1') {
-                $link->set_charset($dbcharset ? $dbcharset : $this->config->charset);
-                $serverset = $this->version() > '5.0.1' ? 'sql_mode=\'\',' : '';
-                $serverset .= 'character_set_client=binary';
+            if($this->version() > '4.1') {
+                $link->set_charset($dbcharset ? $dbcharset : $this->config[1]['dbcharset']);
+                $serverset = $this->version() > '5.0.1' ? 'sql_mode=\'\'' : '';
                 $serverset && $link->query("SET $serverset");
             }
         }
@@ -62,8 +88,16 @@ class Driver_Mysqli {
     }
 
     function table_name($tablename) {
-        $this->curlink = $this->link;
-        return $this->tablepre . $tablename;
+        if(!empty($this->map) && !empty($this->map[$tablename])) {
+            $id = $this->map[$tablename];
+            if(!$this->link[$id]) {
+                $this->connect($id);
+            }
+            $this->curlink = $this->link[$id];
+        } else {
+            $this->curlink = $this->link[1];
+        }
+        return $this->tablepre.$tablename;
     }
 
     function select_db($dbname) {
@@ -71,7 +105,7 @@ class Driver_Mysqli {
     }
 
     function fetch_array($query, $result_type = MYSQLI_ASSOC) {
-        if ($result_type == 'MYSQL_ASSOC') $result_type = MYSQLI_ASSOC;
+        if($result_type == 'MYSQL_ASSOC') $result_type = MYSQLI_ASSOC;
         return $query ? $query->fetch_array($result_type) : null;
     }
 
@@ -84,31 +118,31 @@ class Driver_Mysqli {
     }
 
     public function query($sql, $silent = false, $unbuffered = false) {
-        if (get_config('debug')) {
+        if(get_config('debug')) {
             $starttime = microtime(true);
         }
 
-        if ('UNBUFFERED' === $silent) {
+        if('UNBUFFERED' === $silent) {
             $silent = false;
             $unbuffered = true;
-        } elseif ('SILENT' === $silent) {
+        } elseif('SILENT' === $silent) {
             $silent = true;
             $unbuffered = false;
         }
 
         $resultmode = $unbuffered ? MYSQLI_USE_RESULT : MYSQLI_STORE_RESULT;
 
-        if (!($query = $this->curlink->query($sql, $resultmode))) {
-            if (in_array($this->errno(), array(2006, 2013)) && substr($silent, 0, 5) != 'RETRY') {
+        if(!($query = $this->curlink->query($sql, $resultmode))) {
+            if(in_array($this->errno(), array(2006, 2013)) && substr($silent, 0, 5) != 'RETRY') {
                 $this->connect();
-                return $this->curlink->query($sql, 'RETRY' . $silent);
+                return $this->curlink->query($sql, 'RETRY'.$silent);
             }
-            if (!$silent) {
+            if(!$silent) {
                 $this->halt($this->error(), $this->errno(), $sql);
             }
         }
 
-        if (get_config('debug')) {
+        if(get_config('debug')) {
             $this->sqldebug[] = array($sql, number_format((microtime(true) - $starttime), 6), debug_backtrace(), $this->curlink);
         }
 
@@ -129,7 +163,7 @@ class Driver_Mysqli {
     }
 
     function result($query, $row = 0) {
-        if (!$query || $query->num_rows == 0) {
+        if(!$query || $query->num_rows == 0) {
             return null;
         }
         $query->data_seek($row);
@@ -164,7 +198,7 @@ class Driver_Mysqli {
     }
 
     function version() {
-        if (empty($this->version)) {
+        if(empty($this->version)) {
             $this->version = $this->curlink->server_info;
         }
         return $this->version;
