@@ -10,7 +10,7 @@ abstract class AbstractBaseModel {
     /**
      * @var bool 是否初始化数据库
      */
-    protected $init_db = true;
+    public $init_db = true;
 
     /**
      * Common constructor.

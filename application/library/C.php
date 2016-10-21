@@ -10,6 +10,10 @@ class C {
     private static $_tables;
     private static $_memory;
 
+    /**
+     * @param $name
+     * @return X6bbs_Table
+     */
     public static function t($name) {
         $name = preg_replace_callback('/_([A-Za-z])/',function($m){ return strtoupper($m[1]);}, '_'.$name);
         $name = 'Table_' . $name;

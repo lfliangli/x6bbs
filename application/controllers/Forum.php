@@ -6,8 +6,9 @@
  * Date: 2016/10/20 0020
  * Time: 10:11
  */
-class ForumController extends BaseController {
+class ForumController extends AbstractBaseController {
     public function _init() {
+        defined('CURSCRIPT') || define('CURSCRIPT', 'forum');
         defined('APPTYPEID') || define('APPTYPEID', 2);
     }
 

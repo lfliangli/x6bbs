@@ -9,6 +9,6 @@
 class ForumModel extends AbstractBaseModel{
     public function test(){
         echo __CLASS__ . '--'.__METHOD__ . "<br>";
-        DB::fetch_first('SELECT * FROM ' .DB::table('test'));
+        var_dump(C::t('forum_forum')->fetch(1));
     }
 }
