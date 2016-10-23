@@ -2,7 +2,7 @@
 
 /**
  * Created by PhpStorm.
- * User: lfliangli
+ * User: lfliang
  * Date: 2016/10/20 0020
  * Time: 10:11
  */
@@ -15,7 +15,7 @@ abstract class AbstractBaseController extends Yaf_Controller_Abstract {
         $this->setViewpath(APPLICATION_PATH.'/application/views/default');
 
         global $_G;
-        
+
         $this->_init();
     }
 

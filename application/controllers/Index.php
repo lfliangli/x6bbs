@@ -13,6 +13,23 @@ class IndexController extends AbstractBaseController {
      * 对于如下的例子, 当访问http://yourhost/app/index/index/index/name/root 的时候, 你就会发现不同
      */
     public function indexAction() {
-        $this->redirect("/forum");
+        $query_string = $this->getRequest()->getBaseUri();
+        if(!empty($query_string) && is_numeric($query_string)) {
+            $default = '/forum';
+        } else {
+            $cache_domain = APPLICATION_PATH . '/data/sysdata/cache_domain.php';
+            if (file_exists($cache_domain)) {
+                include_once $cache_domain;
+                if (empty($domain['defaultindex'])) {
+                    $default = '/forum';
+                } else {
+                    $default = $domain['defaultindex'];
+                }
+            } else {
+                $default = '/forum';
+            }
+        }
+
+        $this->redirect($default);
     }
 }
