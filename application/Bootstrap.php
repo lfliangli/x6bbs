@@ -13,6 +13,7 @@ class Bootstrap extends Yaf_Bootstrap_Abstract {
      * 通用函数
      */
     public function _initCommon(Yaf_Dispatcher $dispatcher) {
+        global $_G;
         require_once APPLICATION_PATH . '/public/Common.php';
     }
 

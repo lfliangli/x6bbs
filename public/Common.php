@@ -67,10 +67,10 @@ function memory($cmd, $key='', $value='', $ttl = 0, $prefix = '') {
 }
 
 
-function dintval($int, $allowarray = false) {
+function dintval($int, $allow_array = false) {
     $ret = intval($int);
-    if($int == $ret || !$allowarray && is_array($int)) return $ret;
-    if($allowarray && is_array($int)) {
+    if($int == $ret || !$allow_array && is_array($int)) return $ret;
+    if($allow_array && is_array($int)) {
         foreach($int as &$v) {
             $v = dintval($v, true);
         }
@@ -83,4 +83,35 @@ function dintval($int, $allowarray = false) {
         }
     }
     return $ret;
+}
+
+function load_cache($cache_names, $force = false) {
+    global $_G;
+    static $loaded_cache = array();
+    $cache_names = is_array($cache_names) ? $cache_names : array($cache_names);
+    $caches = array();
+    foreach ($cache_names as $k) {
+        if(!isset($loaded_cache[$k]) || $force) {
+            $caches[] = $k;
+            $loaded_cache[$k] = true;
+        }
+    }
+
+    if(!empty($caches)) {
+        $cache_data = C::t('common_syscache')->fetch_all($caches);
+        foreach($cache_data as $cname => $data) {
+            if($cname == 'setting') {
+                $_G['setting'] = $data;
+            } elseif($cname == 'usergroup_'.$_G['groupid']) {
+                $_G['cache'][$cname] = $_G['group'] = $data;
+            } elseif($cname == 'style_default') {
+                $_G['cache'][$cname] = $_G['style'] = $data;
+            } elseif($cname == 'grouplevels') {
+                $_G['grouplevels'] = $data;
+            } else {
+                $_G['cache'][$cname] = $data;
+            }
+        }
+    }
+    return true;
 }

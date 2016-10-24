@@ -8,7 +8,6 @@
  */
 class ForumModel extends AbstractBaseModel{
     public function test(){
-        echo __CLASS__ . '--'.__METHOD__ . "<br>";
-        var_dump(C::t('forum_forum')->fetch(1));
+        return C::t('forum_forum')->fetch(1);
     }
 }
