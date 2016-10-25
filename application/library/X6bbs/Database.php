@@ -8,6 +8,9 @@
  */
 class X6bbs_Database {
 
+    /**
+     * @var Driver_Mysql|Driver_Mysqli
+     */
     public static $db;
 
     public static $driver;
@@ -169,7 +172,7 @@ class X6bbs_Database {
     public static function quote($str, $noarray = false) {
 
         if (is_string($str))
-            return '\'' . mysql_escape_string($str) . '\'';
+            return '\'' . self::$db->escape_string($str) . '\'';
 
         if (is_int($str) or is_float($str))
             return '\'' . $str . '\'';

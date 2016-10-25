@@ -15,6 +15,7 @@ class ForumController extends AbstractBaseController {
     public function indexAction() {
         $ret = ForumModel::getInstance()->test();
 
-        $this->display('test', ['ret'=>$ret]);
+        $this->assign('ret', $ret);
+        $this->display('test');
     }
 }
