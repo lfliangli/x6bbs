@@ -67,10 +67,10 @@ function memory($cmd, $key='', $value='', $ttl = 0, $prefix = '') {
 }
 
 
-function dintval($int, $allowarray = false) {
+function dintval($int, $allow_array = false) {
     $ret = intval($int);
-    if($int == $ret || !$allowarray && is_array($int)) return $ret;
-    if($allowarray && is_array($int)) {
+    if($int == $ret || !$allow_array && is_array($int)) return $ret;
+    if($allow_array && is_array($int)) {
         foreach($int as &$v) {
             $v = dintval($v, true);
         }
@@ -83,4 +83,45 @@ function dintval($int, $allowarray = false) {
         }
     }
     return $ret;
+}
+
+function load_cache($cache_names, $force = false) {
+    static $loaded_cache = array();
+    $cache_names = is_array($cache_names) ? $cache_names : array($cache_names);
+    $caches = array();
+    foreach ($cache_names as $k) {
+        if(!isset($loaded_cache[$k]) || $force) {
+            $caches[] = $k;
+            $loaded_cache[$k] = true;
+        }
+    }
+
+    if(!empty($caches)) {
+        $cache_data = C::t('common_syscache')->fetch_all($caches);
+        foreach($cache_data as $cname => $data) {
+            if($cname == 'setting') {
+                set_global('setting', $data);
+            } elseif($cname == 'usergroup_'.get_global('groupid')) {
+                set_global('group', $data);
+            } elseif($cname == 'style_default') {
+                set_global('style', $data);
+            } elseif($cname == 'grouplevels') {
+                set_global('grouplevels', $data);
+            } else {
+                set_global('cache/'.$cname, $data);
+            }
+        }
+    }
+    return true;
+}
+
+function template($tpl, $suffix = '.phtml'){
+    $tpl = str_replace($suffix, '', $tpl) . $suffix;
+    $script_path = get_global('script_path');
+    !$script_path && $script_path = APPLICATION_VIEWS . '/default';
+    if(file_exists($script_path . '/' . $tpl)){
+        return $script_path . '/' . $tpl;
+    } else {
+        return APPLICATION_VIEWS . '/default/' . $tpl;
+    }
 }
