@@ -3,17 +3,18 @@
 /**
  * Created by PhpStorm.
  * User: lfliang
- * Date: 2016/10/20 0020
- * Time: 18:34
+ * Date: 2016/12/29
+ * Time: 12:12
  */
-class Driver_Mysqli {
+class Driver_PDO {
     var $tablepre;
     var $version = '';
-    var $drivertype = 'mysqli';
+    var $drivertype = 'PDO';
     var $querynum = 0;
+    var $affected_rows = 0;
     var $slaveid = 0;
     /**
-     * @var mysqli
+     * @var PDO
      */
     var $curlink;
     var $link = array();
@@ -21,7 +22,7 @@ class Driver_Mysqli {
     var $sqldebug = array();
     var $map = array();
 
-    function db_mysql($config = array()) {
+    function db_pdo($config = array()) {
         if(!empty($config)) {
             $this->set_config($config);
         }
@@ -74,19 +75,14 @@ class Driver_Mysqli {
     }
 
     function _dbconnect($dbhost, $dbuser, $dbpw, $dbcharset, $dbname, $halt = true) {
-
-        $link = new mysqli();
-        if(!$link->real_connect($dbhost, $dbuser, $dbpw, $dbname, null, null, MYSQLI_CLIENT_COMPRESS)) {
+        try {
+            $dsn = 'mysql:host=' . $dbhost . ';dbname=' . $dbname . ';charset=' . $dbcharset;
+            $this->curlink = new PDO($dsn, $dbuser, $dbpw);
+        } catch (PDOException $e) {
             $halt && $this->halt('notconnect', $this->errno());
-        } else {
-            $this->curlink = $link;
-            if($this->version() > '4.1') {
-                $link->set_charset($dbcharset ? $dbcharset : $this->config[1]['dbcharset']);
-                $serverset = $this->version() > '5.0.1' ? 'sql_mode=\'\'' : '';
-                $serverset && $link->query("SET $serverset");
-            }
         }
-        return $link;
+
+        return $this->curlink;
     }
 
     function table_name($tablename) {
@@ -102,22 +98,23 @@ class Driver_Mysqli {
         return $this->tablepre.$tablename;
     }
 
-    function select_db($dbname) {
-        return $this->curlink->select_db($dbname);
+    function select_db() {
+        return true;
     }
 
     /**
-     * @param $query mysqli_result
+     * @param $query PDOStatement
      * @param int $result_type
-     * @return null
+     * @return null|array
      */
-    function fetch_array($query, $result_type = MYSQLI_ASSOC) {
-        if($result_type == 'MYSQL_ASSOC') $result_type = MYSQLI_ASSOC;
-        return $query ? $query->fetch_array($result_type) : null;
+    function fetch_array($query, $result_type = PDO::FETCH_ASSOC) {
+        if($result_type == 'MYSQL_ASSOC') $result_type = PDO::FETCH_ASSOC;
+        return $query ? $query->fetchAll($result_type) : null;
     }
 
     function fetch_first($sql) {
-        return $this->fetch_array($this->query($sql));
+        $query = $this->query($sql);
+        return $query->fetch(PDO::FETCH_ASSOC);
     }
 
     function result_first($sql) {
@@ -139,15 +136,21 @@ class Driver_Mysqli {
             $unbuffered = false;
         }
 
-        $resultmode = $unbuffered ? MYSQLI_USE_RESULT : MYSQLI_STORE_RESULT;
+        $resultmode = $unbuffered ? PDO::ATTR_DEFAULT_FETCH_MODE : PDO::MYSQL_ATTR_USE_BUFFERED_QUERY;
 
-        if(!($query = $this->curlink->query($sql, $resultmode))) {
-            if(in_array($this->errno(), array(2006, 2013)) && substr($silent, 0, 5) != 'RETRY') {
-                $this->connect();
-                return $this->curlink->query($sql, 'RETRY'.$silent);
-            }
-            if(!$silent) {
-                $this->halt($this->error(), $this->errno(), $sql);
+        $cmd = trim(strtoupper(substr($sql, 0, strpos($sql, ' '))));
+        if ($cmd === 'UPDATE' || $cmd === 'DELETE' || $cmd === 'INSERT') {
+            $this->affected_rows = $query = $this->curlink->exec($sql);
+        } else {
+            if (!($query = $this->curlink->query($sql, $resultmode))) {
+                if (in_array($this->errno(), array(2006, 2013)) && substr($silent, 0, 5) != 'RETRY') {
+                    $this->connect();
+
+                    return $this->curlink->query($sql);
+                }
+                if (!$silent) {
+                    $this->halt($this->error(), $this->errno(), $sql);
+                }
             }
         }
 
@@ -160,83 +163,97 @@ class Driver_Mysqli {
     }
 
     function affected_rows() {
-        return $this->curlink->affected_rows;
+        return $this->affected_rows;
     }
 
     function error() {
-        return (($this->curlink) ? $this->curlink->error : mysqli_error($this->curlink));
+        return $this->curlink->errorInfo();
     }
 
     function errno() {
-        return intval(($this->curlink) ? $this->curlink->errno : mysqli_errno($this->curlink));
+        return $this->curlink->errorCode();
     }
 
     /**
-     * @param $query mysqli_result
+     * @param $query PDOStatement
      * @param int $row
      * @return null
      */
     function result($query, $row = 0) {
-        if(!$query || $query->num_rows == 0) {
+        if(!$query || $query->rowCount() == 0) {
             return null;
         }
-        $query->data_seek($row);
-        $assocs = $query->fetch_row();
-        return $assocs[0];
-    }
 
-    function num_rows($query) {
-        $query = $query ? $query->num_rows : 0;
-        return $query;
-    }
-
-    function num_fields($query) {
-        return $query ? $query->field_count : null;
+        return $query->fetchColumn($row);
     }
 
     /**
-     * @param $query mysqli_result
+     * @param $query PDOStatement
+     * @return int
+     */
+    function num_rows($query) {
+        $query = $query ? $query->rowCount() : 0;
+        return $query;
+    }
+
+    /**
+     * @param $query PDOStatement
+     * @return null
+     */
+    function num_fields($query) {
+        return $query ? $query->columnCount() : null;
+    }
+
+    /**
+     * @param $query PDOStatement
      * @return bool
      */
     function free_result($query) {
-        $query && $query->free();
+        $query && $query = null;
         return $query ? true : false;
     }
 
     function insert_id() {
-        return ($id = $this->curlink->insert_id) >= 0 ? $id : $this->result($this->query("SELECT last_insert_id()"), 0);
+        return ($id = $this->curlink->lastInsertId()) >= 0 ? $id : $this->result($this->query("SELECT last_insert_id()"), 0);
     }
 
     /**
-     * @param $query mysqli_result
+     * @param $query PDOStatement
      * @return null
      */
     function fetch_row($query) {
-        $query = $query ? $query->fetch_row() : null;
+        $query = $query ? $query->fetch(PDO::FETCH_NUM) : null;
         return $query;
     }
 
     /**
-     * @param $query mysqli_result
+     * @param $query PDOStatement
      * @return null
      */
     function fetch_fields($query) {
-        return $query ? $query->fetch_field() : null;
+        $fields = array();
+        if ($query) {
+            for ($i = 0; $i < $query->columnCount(); $i ++) {
+                $fields[] = $query->getColumnMeta($i);
+            }
+        }
+
+        return $fields ? $fields : null;
     }
 
     function version() {
         if(empty($this->version)) {
-            $this->version = $this->curlink->server_info;
+            $this->version = $this->curlink->getAttribute(PDO::ATTR_SERVER_VERSION);
         }
         return $this->version;
     }
 
     function escape_string($str) {
-        return $this->curlink->escape_string($str);
+        return substr($this->curlink->quote($str), 1, -1);
     }
 
     function close() {
-        return $this->curlink->close();
+        return $this->curlink = null;
     }
 
     function halt($message = '', $code = 0, $sql = '') {
