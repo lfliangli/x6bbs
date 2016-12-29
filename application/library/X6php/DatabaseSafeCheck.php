@@ -6,7 +6,7 @@
  * Date: 2016/10/20 0020
  * Time: 17:57
  */
-class X6bbs_DatabaseSafeCheck {
+class X6php_DatabaseSafeCheck {
 
     protected static $checkcmd = array('SEL'=>1, 'UPD'=>1, 'INS'=>1, 'REP'=>1, 'DEL'=>1);
     protected static $config;

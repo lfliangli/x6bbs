@@ -6,7 +6,7 @@
  * Date: 2016/10/20 0020
  * Time: 16:38
  */
-class X6bbs_Memory extends X6bbs_Base{
+class X6php_Memory extends X6php_Base{
     private $config;
     private $extension = array();
     private $memory;

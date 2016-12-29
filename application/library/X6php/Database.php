@@ -6,7 +6,7 @@
  * Date: 2016/10/20 0020
  * Time: 14:34
  */
-class X6bbs_Database {
+class X6php_Database {
 
     /**
      * @var Driver_Mysql|Driver_Mysqli
@@ -166,7 +166,7 @@ class X6bbs_Database {
     }
 
     public static function checkquery($sql) {
-        return X6bbs_DatabaseSafeCheck::checkquery($sql);
+        return X6php_DatabaseSafeCheck::checkquery($sql);
     }
 
     public static function quote($str, $noarray = false) {

@@ -6,7 +6,7 @@
  * Date: 2016/10/20 0020
  * Time: 14:34
  */
-abstract class X6bbs_Base {
+abstract class X6php_Base {
     public function __construct() {}
 
     public function __set($name, $value) {

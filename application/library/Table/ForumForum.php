@@ -6,7 +6,7 @@
  * Date: 2016/10/20 0020
  * Time: 14:34
  */
-class Table_ForumForum extends X6bbs_Table
+class Table_ForumForum extends X6php_Table
 {
 	public function __construct() {
 

@@ -6,7 +6,7 @@
  * Date: 2016/10/20 0020
  * Time: 14:34
  */
-class X6bbs_Table extends X6bbs_Base
+class X6php_Table extends X6php_Base
 {
     public $data = array();
 

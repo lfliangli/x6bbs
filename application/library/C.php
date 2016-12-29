@@ -12,7 +12,7 @@ class C {
 
     /**
      * @param $name
-     * @return X6bbs_Table
+     * @return X6php_Table
      */
     public static function t($name) {
         $name = preg_replace_callback('/_([A-Za-z])/',function($m){ return strtoupper($m[1]);}, '_'.$name);
@@ -40,7 +40,7 @@ class C {
 
     public static function memory() {
         if(!self::$_memory) {
-            self::$_memory = new X6bbs_Memory();
+            self::$_memory = new X6php_Memory();
             self::$_memory->init(get_config('memory'));
         }
         return self::$_memory;

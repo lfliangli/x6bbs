@@ -6,7 +6,7 @@
  * Date: 2016/10/20 0020
  * Time: 14:34
  */
-class Table_CommonSyscache extends X6bbs_Table {
+class Table_CommonSyscache extends X6php_Table {
     private $_is_file_cache;
     
     public function __construct() {
@@ -61,7 +61,7 @@ class Table_CommonSyscache extends X6bbs_Table {
             if($this->_is_file_cache) {
                 $cache_data = '$data[\''.$sys_cache['cname'].'\'] = '.var_export($data[$sys_cache['cname']], true).";\n\n";
                 if(($fp = @fopen(APPLICATION_PATH.'/public/data/cache/cache_'.$sys_cache['cname'].'.php', 'wb'))) {
-                    fwrite($fp, "<?php\n//X6bbs! cache file, DO NOT modify me!\n//Identify: ".md5($sys_cache['cname'].$cache_data.get_global('config/security/authkey'))."\n\n$cache_data?>");
+                    fwrite($fp, "<?php\n//X6php! cache file, DO NOT modify me!\n//Identify: ".md5($sys_cache['cname'].$cache_data.get_global('config/security/authkey'))."\n\n$cache_data?>");
                     fclose($fp);
                 }
             }

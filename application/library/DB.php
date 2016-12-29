@@ -6,6 +6,6 @@
  * Date: 2016/10/20 0020
  * Time: 17:59
  */
-class DB extends X6bbs_Database{
+class DB extends X6php_Database{
 
 }
